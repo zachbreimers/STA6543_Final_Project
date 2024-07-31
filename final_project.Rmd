@@ -1,0 +1,447 @@
+---
+title: "Final Project"
+author: "Josh Gardner, Brody Johnson, Zach Reimers (gpq253), Sara Shields-Menard"
+date: "2024-07-30"
+output: word_document
+---
+
+## Libraries
+
+```{r libraries}
+
+pacman::p_load(tidyverse, caret, earth, parallel, doParallel, mlbench, randomForest, tree, rpart, gbm, Cubist, partykit, httr, e1071, party, usethis)
+```
+
+## Data
+
+```{r data}
+
+diabetes = as.data.frame(read_csv(here::here('C:/Users/mach1/OneDrive - University of Texas at San Antonio/MSDA/2024Summer/STA6543/Project','archive.zip'), show_col_types = FALSE))
+```
+
+## Check for null and missing values
+
+```{r check_for_null_values}
+
+which(is.na(diabetes))
+which(is.null(diabetes))
+```
+
+### Conclusion
+No null or missing values in dataset
+
+## Check for predictors with near zero variances
+
+```{r NZV}
+
+nearZeroVar(diabetes[1:8])
+```
+
+### Conclusion
+No predictors with near zero variance in dataset
+
+## Check for skewness
+
+```{r}
+
+apply(diabetes[1:8], 2, function(x) skewness(x))
+```
+
+### Conclusion
+Several predictors exhibit a higher degree of skewness, data would benefit from preprocessing including: centering, scaling, Box-Cox transformation, and normalization
+
+## Train Test Split
+
+```{r train_test_split}
+
+set.seed(100)
+train_partition = createDataPartition(diabetes[,9], p = 0.8)[[1]]
+
+# Response split
+diabetes_train  = diabetes[train_partition,9]
+diabetes_test   = diabetes[-train_partition,9]
+
+# Predictor split
+x_train         = diabetes[train_partition,1:8]
+x_test          = diabetes[-train_partition,1:8]
+```
+
+## Data PreProcessing
+
+```{r preprocessing}
+
+set.seed(100)
+x_PP = preProcess(x_train, method = c('center', 'scale', 'BoxCox', 'spatialSign'))
+x_train_trans = predict(x_PP, x_train)
+```
+
+## Cross-Fold Validation
+
+```{r cv}
+
+indx = createFolds(diabetes_train, returnTrain = TRUE)
+ctrl = trainControl(method = "cv", index = indx)
+```
+
+## Linear Regression and It's Cousins
+
+### Linear Regression
+
+```{r lm}
+
+set.seed(100)
+
+diabetes_lm = train(x = x_train_trans, y = diabetes_train,
+                    method = 'lm',
+                    trControl = ctrl)
+
+diabetes_lm
+summary(diabetes_lm)
+
+diabetes_results = data.frame(obs = diabetes_test,
+                              LM = predict(diabetes_lm, x_test))
+```
+
+### Partial Least Squares
+
+```{r pls}
+
+set.seed(100)
+diabetes_pls = train(x = x_train_trans, y = diabetes_train,
+                    method = 'pls',
+                    tuneGrid = expand.grid(ncomp = 1:5),
+                    trControl = ctrl)
+
+diabetes_pls
+plot(diabetes_pls)
+
+diabetes_results$PLS = predict(diabetes_pls, x_test)
+```
+
+### PCR
+
+```{r pcr}
+
+set.seed(100)
+diabetes_pcr = train(x = x_train_trans, y = diabetes_train,
+                    method = 'pcr',
+                    tuneGrid = expand.grid(ncomp = 1:9),
+                    trControl = ctrl)
+
+diabetes_pcr
+plot(diabetes_pcr)
+
+diabetes_results$PCR = predict(diabetes_pcr, x_test)
+```
+
+## Shrinkage-Penalized Models
+
+### Ridge Regression
+
+```{r ridge}
+
+set.seed(100)
+
+ridgeGrid = expand.grid(lambda = seq(0, .1, length = 10))
+
+diabetes_ridge = train(x = x_train_trans, y = diabetes_train,
+                    method = 'ridge',
+                    tuneGrid = ridgeGrid,
+                    trControl = ctrl)
+
+diabetes_ridge
+names(diabetes_ridge)
+summary(diabetes_ridge)
+
+diabetes_results$RIDGE = predict(diabetes_ridge, x_test)
+```
+
+### ENET
+
+```{r enet}
+
+set.seed(100)
+
+enetGrid <- expand.grid(lambda = c(0, 0.01, .1, 1), 
+                        fraction = seq(.05, 1, length = 20))
+
+diabetes_enet <- train(x = x_train_trans, y = diabetes_train,
+                    method = "enet",
+                    tuneGrid = enetGrid,
+                    trControl = ctrl)
+
+diabetes_enet
+names(diabetes_enet)
+summary(diabetes_enet)
+
+diabetes_results$ENET = predict(diabetes_enet, x_test)
+```
+
+## NonLinear Regression Models
+
+### Neural Net
+
+```{r nnet}
+
+set.seed(100)
+
+nnetGrid = expand.grid(decay = c(0, 0.01, 0.1, 1),
+                       size = c(1,3,5,7),
+                       bag = FALSE)
+
+ptm = proc.time()
+
+diabetes_nnet = train(x = x_train_trans, y = diabetes_train,
+                  method = 'avNNet',
+                  tuneGrid = nnetGrid,
+                  trControl = ctrl,
+                  linout = TRUE,
+                  trace = FALSE,
+                  MaxNWts = 10 * (ncol(x_train_trans) + 1) + 10 + 1,
+                  maxit = 1000,
+                  allowParallel = FALSE)
+
+diabetes_nnet
+plot(diabetes_nnet)
+
+proc.time() - ptm
+
+diabetes_results$NNET = predict(diabetes_nnet, x_test)
+```
+
+### MARS
+
+```{r}
+
+set.seed(100)
+
+diabetes_mars = train(x = x_train_trans, y = diabetes_train,
+                  method = 'earth',
+                  tuneGrid = expand.grid(degree = 1, nprune = 2:38),
+                  trControl = ctrl)
+
+diabetes_mars
+plot(diabetes_mars)
+
+MARSimp = varImp(diabetes_mars, scale = FALSE)
+plot(MARSimp)
+
+diabetes_results$MARS = predict(diabetes_mars, x_test)
+```
+
+### Radial SVM
+
+```{r SVMr}
+
+set.seed(100)
+
+diabetes_svmr = train(x = x_train_trans, y = diabetes_train,
+                  method = 'svmRadial',
+                  tuneLength = 14,
+                  trControl = ctrl)
+
+diabetes_svmr
+plot(diabetes_svmr, scales = list(x = list(log = 2)))
+
+diabetes_results$SVMr = predict(diabetes_svmr, x_test)
+```
+
+### Poly SVM
+
+```{r SVMp}
+
+set.seed(100)
+
+svmGrid = expand.grid(degree = 1:2,
+                      scale = c(0.01, 0.005, 0.0001),
+                      C = 2^(-2:10))
+
+diabetes_svmp = train(x = x_train_trans, y = diabetes_train,
+                  method = 'svmPoly',
+                  tuneGrid = svmGrid,
+                  trControl = ctrl)
+
+diabetes_svmp
+plot(diabetes_svmp,
+     scales = list(x = list(log = 2),
+                   between = list(x = 0.5, y = 1)))
+
+diabetes_results$SVMp = predict(diabetes_svmp, x_test)
+```
+
+### KNN
+
+```{r knn}
+
+set.seed(100)
+
+diabetes_knn = train(x = x_train_trans, y = diabetes_train,
+                  method = 'knn',
+                  tuneGrid = data.frame(k = 1:20),
+                  trControl = ctrl)
+
+diabetes_knn
+plot(diabetes_knn)
+
+diabetes_results$KNN = predict(diabetes_knn, x_test)
+```
+
+## Regression Trees and Rule-Based Models
+
+### Basic Regression Tree
+
+```{r tree}
+
+set.seed(100)
+
+diabetes_tree = train(x = x_train_trans, y = diabetes_train,
+                  method = "rpart",
+                  tuneLength = 25,
+                  trControl = ctrl)
+
+diabetes_tree
+plot(diabetes_tree, scales = list(x = list(log = 10)))
+
+Tree = as.party(diabetes_tree$finalModel)
+plot(Tree)
+
+tree_Imp = varImp(diabetes_tree, scale = FALSE, competes = FALSE)
+tree_Imp
+plot(tree_Imp)
+
+diabetes_results$TREE = predict(diabetes_tree, x_test)
+```
+
+### Conditional Inference Tree
+
+```{r ctree}
+
+set.seed(100)
+
+cGrid <- data.frame(mincriterion = sort(c(.95, seq(.10, .99, length = 20))))
+
+diabetes_ctree = train(x = x_train_trans, y = diabetes_train,
+                   method = "ctree",
+                   tuneGrid = cGrid,
+                   trControl = ctrl)
+
+diabetes_ctree
+
+plot(diabetes_ctree)
+
+plot(diabetes_ctree$finalModel)
+
+diabetes_results$CTREE <- predict(diabetes_ctree, x_test)
+```
+
+### Bagged Tree
+
+```{r bagged_tree}
+
+set.seed(100)
+
+diabetes_bagged = train(x = x_train_trans, y = diabetes_train,
+                     method = "treebag",
+                     nbagg = 50,
+                     trControl = ctrl)
+
+diabetes_bagged
+
+diabetes_results$Bagged <- predict(diabetes_bagged, x_test)
+```
+
+### Boosting
+
+```{r boosting}
+
+set.seed(100)
+
+gbmGrid = expand.grid( interaction.depth = seq( 1, 7, by=2 ),
+                       n.trees = seq( 100, 1000, by=100 ),
+                       shrinkage = c(0.01, 0.1),
+                       n.minobsinnode = 10 )
+
+diabetes_boost = train(x = x_train_trans, y = diabetes_train,
+                 method = "gbm",
+                 tuneGrid = gbmGrid,
+                 trControl = ctrl,
+                 verbose = FALSE)
+
+diabetes_boost
+plot(diabetes_boost, auto.key = list(columns = 4, lines = TRUE))
+
+diabetes_results$Boosting <- predict(diabetes_boost, x_test)
+```
+
+### Random Forest
+
+```{r random_forest}
+
+set.seed(100)
+
+mtryGrid <- data.frame(mtry = floor(seq(1, ncol(x_train_trans), length = 8)))
+
+diabetes_rf <- train(x = x_train_trans, y = diabetes_train,
+                method = "rf",
+                tuneGrid = mtryGrid,
+                ntree = 200,
+                importance = TRUE,
+                trControl = ctrl)
+
+diabetes_rf
+plot(diabetes_rf)
+
+rf_Imp <- varImp(diabetes_rf, scale = FALSE)
+rf_Imp
+
+diabetes_results$RF <- predict(diabetes_rf, x_test)
+```
+
+### Random Forest Tuned with OOB Estimates
+
+```{r random_forest_OOB}
+
+set.seed(100)
+
+ctrlOOB <- trainControl(method = "oob")
+
+diabetes_rfOOB = train(x = x_train_trans, y = diabetes_train,
+                method = "rf",
+                tuneGrid = mtryGrid,
+                ntree = 200,
+                importance = TRUE,
+                trControl = ctrlOOB)
+
+diabetes_rfOOB
+plot(diabetes_rfOOB)
+
+rfOOB_Imp <- varImp(diabetes_rfOOB, scale = FALSE)
+rfOOB_Imp
+
+diabetes_results$RF_OOB <- predict(diabetes_rfOOB, x_test)
+```
+
+### Cubist
+
+```{r cubist}
+
+set.seed(100)
+
+cbGrid = expand.grid(committees = c(1:10, 20, 50, 75, 100), 
+                      neighbors = c(0, 1, 5, 9))
+
+diabetes_cubist = train(x = x_train_trans, y = diabetes_train,
+                    "cubist",
+                    tuneGrid = cbGrid,
+                    trControl = ctrl)
+
+diabetes_cubist
+plot(diabetes_cubist, auto.key = list(columns = 4, lines = TRUE))
+
+cb_Imp <- varImp(diabetes_cubist, scale = FALSE)
+cb_Imp
+plot(cb_Imp)
+
+diabetes_results$Cubist <- predict(diabetes_cubist, x_test)
+```
+
