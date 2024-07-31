@@ -9,14 +9,14 @@ output: word_document
 
 ```{r libraries}
 
-pacman::p_load(tidyverse, caret, earth, parallel, doParallel, mlbench, randomForest, tree, rpart, gbm, Cubist, partykit, httr, e1071, party, usethis)
+pacman::p_load(tidyverse, caret, earth, parallel, doParallel, mlbench, randomForest, tree, rpart, gbm, Cubist, partykit, httr, e1071, party, usethis, RCurl)
 ```
 
 ## Data
 
 ```{r data}
 
-diabetes = as.data.frame(read_csv(here::here('C:/Users/mach1/OneDrive - University of Texas at San Antonio/MSDA/2024Summer/STA6543/Project','archive.zip'), show_col_types = FALSE))
+diabetes = as.data.frame(read.csv(text = getURL('https://raw.githubusercontent.com/zachbreimers/STA6543_Final_Project/main/diabetes.csv')))
 ```
 
 ## Check for null and missing values
