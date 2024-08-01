@@ -7,7 +7,7 @@ output: word_document
 
 ## Libraries
 
-```{r libraries}
+```{r libraries, echo=FALSE}
 
 pacman::p_load(tidyverse, caret, earth, parallel, doParallel, mlbench, randomForest, tree, rpart, gbm, Cubist, partykit, httr, e1071, party, usethis, RCurl)
 ```
@@ -28,7 +28,7 @@ which(is.null(diabetes))
 ```
 
 ### Conclusion
-No null or missing values in dataset
+No null or missing values in data set
 
 ## Check for predictors with near zero variances
 
@@ -38,7 +38,7 @@ nearZeroVar(diabetes[1:8])
 ```
 
 ### Conclusion
-No predictors with near zero variance in dataset
+No predictors with near zero variance in data set.
 
 ## Check for skewness
 
@@ -48,7 +48,7 @@ apply(diabetes[1:8], 2, function(x) skewness(x))
 ```
 
 ### Conclusion
-Several predictors exhibit a higher degree of skewness, data would benefit from preprocessing including: centering, scaling, Box-Cox transformation, and normalization
+Several predictors exhibit a higher degree of skewness, data would benefit from pre-processing including: centering, scaling, Box-Cox transformation, and normalization.
 
 ## Train Test Split
 
@@ -444,4 +444,125 @@ plot(cb_Imp)
 
 diabetes_results$Cubist <- predict(diabetes_cubist, x_test)
 ```
+
+
+## Logistic Regression
+
+### Logistic Regression
+
+```{r}
+set.seed(100)
+ctrl <- trainControl(method = "LGOCV",
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE,
+                     savePredictions = TRUE)
+
+diabetes_train <- make.names(diabetes_train) #Converting response variable to factor
+#levels(diabetes_train)
+
+ diabetes_logistic <- train(x = x_train_trans,
+ y = diabetes_train,
+ method = "glm",
+ metric = "ROC",
+ trControl = ctrl)
+ diabetes_logistic 
+
+ ### Save the test set results in a data frame                 
+ diabetes_results$Logistic <- predict(diabetes_logistic, x_test)
+
+ #####Leaving in case we need it later ###############
+#library(pROC)
+### Predict the test set based the logistic regression 
+#Smarket.test$logistic <- predict(logisticTune,Smarket.test, type = "prob")[,1]
+#ROC for logistic model
+#logisticROC <- roc(Smarket.test$Direction, Smarket.test$logistic)
+#plot(logisticROC, col=1, lty=1, lwd=2)
+
+#Confusion matrix of logistic model
+#confusionMatrix(data = predict(logisticTune, Smarket.test), reference = Smarket.test$Direction)
+
+
+```
+
+
+## Discriminant Analysis
+
+### Linear discriminant analysis
+
+```{r}
+ set.seed(100)
+ diabetes_lda <- train(x = x_train_trans,
+ y = diabetes_train,
+ method = "lda",
+ #preProc = c('center', 'scale'), #Data is already pre-processed
+ metric = "ROC",
+ trControl = ctrl)
+ diabetes_lda
+
+ ### Save the test set results in a data frame  
+ diabetes_results$LDA <- predict(diabetes_lda, x_test)
+```
+
+### Partial least squares discriminant analysis
+
+```{r}
+ set.seed(100)
+ diabetes_plsda <- train(x = x_train_trans,
+ y = diabetes_train,
+ method = "pls",
+ tuneGrid = expand.grid(.ncomp = 1:5),
+ trControl = ctrl)
+
+ diabetes_plsda #ncomp=4 has largest area under curve (ROC=0.81045)
+
+ ### Save the test set results in a data frame  
+ diabetes_results$PLSDA <- predict(diabetes_plsda, x_test)
+
+```
+
+
+## Penalized Models & Nearest Shrunken Centroids
+
+### Penalized Models 
+
+```{r}
+ glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1),
+ .lambda = seq(.01, .2, length = 40))
+ set.seed(100)
+ 
+ diabetes_glmn <- train(x_train_trans,
+ y =  diabetes_train,
+ method = "glmnet",
+ tuneGrid = glmnGrid,
+ metric = "ROC",
+ trControl = ctrl)
+ plot(diabetes_glmn)
+ 
+ ### Save the test set results in a data frame  
+ diabetes_results$GLMN <- predict(diabetes_glmn, x_test)
+```
+
+### Nearest Shrunken Centroids
+
+```{r}
+nscGrid <- data.frame(.threshold = 0:25) #tuning parameter
+diabetes_nsc <- train(x = x_train_trans,
+ y = diabetes_train,
+method = "pam",
+ preProc = c("center", "scale"),
+ tuneGrid = nscGrid,
+ metric = "ROC",
+trControl = ctrl)
+
+diabetes_nsc
+plot(diabetes_nsc)
+
+#variale importance 
+plot(varImp(diabetes_nsc, scale =FALSE))
+
+
+ ### Save the test set results in a data frame  
+ diabetes_results$NSC <- predict(diabetes_nsc, x_test)
+```
+
 
