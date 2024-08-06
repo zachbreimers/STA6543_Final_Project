@@ -9,7 +9,9 @@ output: word_document
 
 ```{r libraries, echo=FALSE}
 
-pacman::p_load(tidyverse, caret, earth, parallel, doParallel, mlbench, randomForest, tree, rpart, gbm, Cubist, partykit, httr, e1071, party, usethis, RCurl, pROC, MASS, glmnet)
+pacman::p_load(tidyverse, caret, earth, parallel, doParallel, mlbench, randomForest,
+               tree, rpart, gbm, Cubist, partykit, httr, e1071, party, usethis, RCurl,
+               pROC, MASS, glmnet, MLmetrics, pamr, klaR, mda, kernlab, modeldata)
 ```
 
 ## Data
@@ -324,7 +326,7 @@ diabetes_results$TREE = predict(diabetes_tree, x_test)
 
 set.seed(100)
 
-cGrid <- data.frame(mincriterion = sort(c(.95, seq(.10, .99, length = 20))))
+cGrid = data.frame(mincriterion = sort(c(.95, seq(.10, .99, length = 20))))
 
 diabetes_ctree = train(x = x_train, y = diabetes_train,
                    method = "ctree",
@@ -355,7 +357,7 @@ diabetes_bagged = train(x = x_train, y = diabetes_train,
 
 diabetes_bagged
 
-diabetes_results$Bagged <- predict(diabetes_bagged, x_test)
+diabetes_results$Bagged = predict(diabetes_bagged, x_test)
 ```
 
 ### Boosting
@@ -379,7 +381,7 @@ diabetes_boost = train(x = x_train, y = diabetes_train,
 diabetes_boost
 plot(diabetes_boost, auto.key = list(columns = 4, lines = TRUE))
 
-diabetes_results$Boosting <- predict(diabetes_boost, x_test)
+diabetes_results$Boosting = predict(diabetes_boost, x_test)
 ```
 
 ### Random Forest
@@ -388,9 +390,9 @@ diabetes_results$Boosting <- predict(diabetes_boost, x_test)
 
 set.seed(100)
 
-mtryGrid <- data.frame(mtry = floor(seq(1, ncol(x_train), length = 8)))
+mtryGrid = data.frame(mtry = floor(seq(1, ncol(x_train), length = 8)))
 
-diabetes_rf <- train(x = x_train, y = diabetes_train,
+diabetes_rf = train(x = x_train, y = diabetes_train,
                 method = "rf",
                 tuneGrid = mtryGrid,
                 ntree = 200,
@@ -401,10 +403,10 @@ diabetes_rf <- train(x = x_train, y = diabetes_train,
 diabetes_rf
 plot(diabetes_rf)
 
-rf_Imp <- varImp(diabetes_rf, scale = FALSE)
+rf_Imp = varImp(diabetes_rf, scale = FALSE)
 rf_Imp
 
-diabetes_results$RF <- predict(diabetes_rf, x_test)
+diabetes_results$RF = predict(diabetes_rf, x_test)
 ```
 
 ### Random Forest Tuned with OOB Estimates
@@ -413,7 +415,7 @@ diabetes_results$RF <- predict(diabetes_rf, x_test)
 
 set.seed(100)
 
-ctrlOOB <- trainControl(method = "oob")
+ctrlOOB = trainControl(method = "oob")
 
 diabetes_rfOOB = train(x = x_train, y = diabetes_train,
                 method = "rf",
@@ -426,10 +428,10 @@ diabetes_rfOOB = train(x = x_train, y = diabetes_train,
 diabetes_rfOOB
 plot(diabetes_rfOOB)
 
-rfOOB_Imp <- varImp(diabetes_rfOOB, scale = FALSE)
+rfOOB_Imp = varImp(diabetes_rfOOB, scale = FALSE)
 rfOOB_Imp
 
-diabetes_results$RF_OOB <- predict(diabetes_rfOOB, x_test)
+diabetes_results$RF_OOB = predict(diabetes_rfOOB, x_test)
 ```
 
 ### Cubist
@@ -450,11 +452,11 @@ diabetes_cubist = train(x = x_train, y = diabetes_train,
 diabetes_cubist
 plot(diabetes_cubist, auto.key = list(columns = 4, lines = TRUE))
 
-cb_Imp <- varImp(diabetes_cubist, scale = FALSE)
+cb_Imp = varImp(diabetes_cubist, scale = FALSE)
 cb_Imp
 plot(cb_Imp)
 
-diabetes_results$Cubist <- predict(diabetes_cubist, x_test)
+diabetes_results$Cubist = predict(diabetes_cubist, x_test)
 ```
 
 ### Continuous Model Performance Results
@@ -491,7 +493,7 @@ modelPerf[order(modelPerf$RMSE),]
 ```{r classification response train control}
 
 set.seed(100)
-class_ctrl <- trainControl(method = "LGOCV",
+class_ctrl = trainControl(method = "LGOCV",
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE,
                      savePredictions = TRUE)
@@ -501,8 +503,10 @@ class_ctrl <- trainControl(method = "LGOCV",
 
 ```{r factor conversions}
 
-diabetes_train_class = as.factor(diabetes_train)
-diabetes_test_class = as.factor(diabetes_test)
+diabetes_train_class = as.factor(make.names(diabetes_train))
+diabetes_test_class = as.factor(make.names(diabetes_test))
+
+diabetes_results$obs_class = diabetes_test_class
 ```
 
 ## Discriminant and Linear Classification Models
@@ -510,9 +514,10 @@ diabetes_test_class = as.factor(diabetes_test)
 ### Logistic Regression
 
 ```{r classification logistic regression}
+
 set.seed(100)
 
-diabetes_logistic = train(x = x_train, y = diabetes_train,
+diabetes_logistic = train(x = x_train, y = diabetes_train_class,
                           method = "glm",
                           metric = "ROC",
                           preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
@@ -529,9 +534,10 @@ diabetes_results$Log_prob = predict(diabetes_logistic, x_test, type = 'prob')[,1
 ### Linear discriminant analysis
 
 ```{r LDA}
+
 set.seed(100)
 
-diabetes_lda = train(x = x_train_trans, y = diabetes_train,
+diabetes_lda = train(x = x_train, y = diabetes_train_class,
                      method = "lda",
                      metric = "ROC",
                      preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
@@ -539,69 +545,446 @@ diabetes_lda = train(x = x_train_trans, y = diabetes_train,
 
 diabetes_lda
 
-diabetes_results$LDA <- predict(diabetes_lda, x_test)
+diabetes_results$LDA = predict(diabetes_lda, x_test)
+diabetes_results$LDA_prob = predict(diabetes_lda, x_test, type = 'prob')[,1]
 ```
 
 ### Partial least squares discriminant analysis
 
-```{r}
- set.seed(100)
- diabetes_plsda <- train(x = x_train_trans,
- y = diabetes_train,
- method = "pls",
- tuneGrid = expand.grid(.ncomp = 1:5),
- trControl = class_ctrl)
+```{r PLSDA}
 
- diabetes_plsda #ncomp=4 has largest area under curve (ROC=0.81045)
+set.seed(100)
+ 
+diabetes_plsda = train(x = x_train, y = diabetes_train_class,
+                       method = "pls",
+                       metric = "ROC",
+                       tuneGrid = expand.grid(.ncomp = 1:5),
+                       preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                       trControl = class_ctrl)
 
- ### Save the test set results in a data frame  
- diabetes_results$PLSDA <- predict(diabetes_plsda, x_test)
+diabetes_plsda
 
+diabetes_results$PLSDA = predict(diabetes_plsda, x_test)
+diabetes_results$PLSDA_prob = predict(diabetes_plsda, x_test, type = 'prob')[,1]
 ```
-
 
 ## Penalized Models & Nearest Shrunken Centroids
 
 ### Penalized Models 
 
-```{r}
- glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1),
- .lambda = seq(.01, .2, length = 40))
- set.seed(100)
+```{r GLMNET}
+
+set.seed(100) 
+
+glmnGrid = expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1),
+                        .lambda = seq(.01, .2, length = 40))
  
- diabetes_glmn <- train(x_train_trans,
- y =  diabetes_train,
- method = "glmnet",
- tuneGrid = glmnGrid,
- metric = "ROC",
- trControl = class_ctrl)
- plot(diabetes_glmn)
+diabetes_glmnet = train(x_train, y =  diabetes_train_class,
+                      method = "glmnet",
+                      tuneGrid = glmnGrid,
+                      metric = "ROC",
+                      preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                      trControl = class_ctrl)
+
+diabetes_glmnet
+plot(diabetes_glmnet)
  
- ### Save the test set results in a data frame  
- diabetes_results$GLMN <- predict(diabetes_glmn, x_test)
+diabetes_results$GLMNET = predict(diabetes_glmnet, x_test)
+diabetes_results$GLMNET_prob = predict(diabetes_glmnet, x_test, type = 'prob')[,1]
 ```
 
 ### Nearest Shrunken Centroids
 
-```{r}
-nscGrid <- data.frame(.threshold = 0:25) #tuning parameter
-diabetes_nsc <- train(x = x_train_trans,
- y = diabetes_train,
-method = "pam",
- preProc = c("center", "scale"),
- tuneGrid = nscGrid,
- metric = "ROC",
-trControl = class_ctrl)
+```{r NSC}
+
+set.seed(100)
+
+nscGrid = data.frame(.threshold = 0:25)
+
+diabetes_nsc = train(x = x_train, y = diabetes_train_class,
+                     method = "pam",
+                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                     tuneGrid = nscGrid,
+                     metric = "ROC",
+                     trControl = class_ctrl)
 
 diabetes_nsc
 plot(diabetes_nsc)
 
-#variale importance 
 plot(varImp(diabetes_nsc, scale =FALSE))
 
-
- ### Save the test set results in a data frame  
- diabetes_results$NSC <- predict(diabetes_nsc, x_test)
+diabetes_results$NSC = predict(diabetes_nsc, x_test)
+diabetes_results$NSC_prob = predict(diabetes_nsc, x_test, type = 'prob')[,1]
 ```
 
+## Non-Linear Classification Models
+
+### Quadratic discriminant analysis
+
+```{r}
+
+set.seed(100)
+
+diabetes_qda = train(x = x_train, y = diabetes_train_class,
+                     method = "qda",
+                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                     metric = "ROC",
+                     trControl = class_ctrl)
+
+diabetes_qda 
+
+diabetes_results$QDA = predict(diabetes_qda, x_test)
+diabetes_results$QDA_prob = predict(diabetes_qda, x_test, type = 'prob')[,1]
+```
+
+### Regularized discriminant analysis
+
+```{r}
+
+set.seed(100)
+
+diabetes_rda = train(x = x_train, y = diabetes_train_class,
+                     method = "rda",
+                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'), 
+                     metric = "ROC",
+                     trControl = class_ctrl)
+
+diabetes_rda
+
+diabetes_results$RDA = predict(diabetes_rda, x_test)
+diabetes_results$RDA_prob = predict(diabetes_rda, x_test, type = 'prob')[,1]
+```
+
+
+### Mixture discriminant analysis 
+
+```{r}
+
+set.seed(100)
+
+diabetes_mda = train(x = x_train, y = diabetes_train_class,
+                     method = "mda",
+                     tuneGrid = expand.grid(.subclasses = 1:8),
+                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'), 
+                     metric = "ROC",
+                     trControl = class_ctrl)
+
+diabetes_mda
+
+diabetes_results$MDA = predict(diabetes_mda, x_test)
+diabetes_results$MDA_prob = predict(diabetes_mda, x_test, type = 'prob')[,1]
+```
+
+### Naïve Bayes
+
+```{r}
+
+set.seed(100)
+
+diabetes_nb = train(x = x_train, y = diabetes_train_class,
+                    method = "nb",
+                    preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'), 
+                    metric = "ROC",
+                    trControl = class_ctrl)
+
+diabetes_nb
+
+diabetes_results$NB = predict(diabetes_nb, x_test)
+diabetes_results$NB_prob = predict(diabetes_nb, x_test, type = 'prob')[,1]
+```
+
+
+### K-nearest neighbors
+
+```{r}
+
+set.seed(100)
+
+diabetes_class_knn = train(x = x_train, y = diabetes_train_class,
+                           method = "knn",
+                           metric = "ROC",
+                           preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'), 
+                           tuneGrid = data.frame(.k =  seq(1,400, by=10)),
+                           trControl = class_ctrl)
+
+diabetes_class_knn
+plot(diabetes_class_knn)
+
+diabetes_results$CLASS_KNN = predict(diabetes_class_knn, x_test)
+diabetes_results$CLASS_KNN_prob = predict(diabetes_class_knn, x_test, type = 'prob')[,1]
+```
+
+
+### Neural networks
+
+```{r}
+
+set.seed(100)
+
+nnetGrid_class = expand.grid(.size = 1:15,
+                             .decay = c(0, .1, 1, 2))
+
+#maxSize_class = max(nnetGrid_class$.size)
+
+diabetes_class_nnet <- train(x = x_train, y = diabetes_train_class,
+                             method = "nnet",
+                             metric = "ROC",
+                             preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),  
+                             tuneGrid = nnetGrid_class,
+                             trace = FALSE,
+                             maxit = 2000,
+                             MaxNWts = 200,
+                             trControl = class_ctrl)
+
+diabetes_class_nnet
+plot(diabetes_class_nnet)
+
+diabetes_results$CLASS_NNET = predict(diabetes_class_nnet, x_test)
+diabetes_results$CLASS_NNET_prob = predict(diabetes_class_nnet, x_test, type = 'prob')[,1]
+```
+
+### Flexible discriminant analysis
+
+```{r}
+
+set.seed(100)
+
+diabetes_FDA = train(x = x_train, y = diabetes_train_class,
+                     method = "fda",
+                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),  
+                     metric = "ROC",
+                     trControl = class_ctrl)
+
+diabetes_FDA
+
+diabetes_results$FDA = predict(diabetes_FDA, x_test)
+diabetes_results$FDA_prob = predict(diabetes_FDA, x_test, type = 'prob')[,1]
+```
+
+
+### Support Vector Machines 
+
+```{r}
+
+set.seed(100)
+
+sigmaRangeReduced <- sigest(as.matrix(x_train))
+svmRGridReduced <- expand.grid(.sigma = sigmaRangeReduced[1],
+                               .C = 2^(seq(-4, 4)))
+
+diabetes_class_svmr = train(x = x_train, y = diabetes_train_class,
+                            method = "svmRadial", #svmLinear #svmPoly #Radial is common in practice
+                            metric = "ROC",
+                            preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'), 
+                            tuneGrid = svmRGridReduced,
+                            fit = FALSE,
+                            trControl = class_ctrl)
+
+diabetes_class_svmr
+
+diabetes_results$CLASS_SVMr = predict(diabetes_class_svmr, x_test)
+diabetes_results$CLASS_SVMr_prob = predict(diabetes_class_svmr, x_test, type = 'prob')[,1]
+```
+
+## Classification Trees
+
+### Classification Tree
+```{r class_tree}
+
+set.seed(100)
+
+diabetes_class_tree = train(x = x_train, y = diabetes_train_class,
+                            method = 'rpart',
+                            metric = 'ROC',
+                            preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                            tuneLength = 30,
+                            trControl = class_ctrl)
+
+diabetes_class_tree
+plot(diabetes_class_tree)
+
+diabetes_results$CLASS_TREE = predict(diabetes_class_tree, x_test)
+diabetes_results$CLASS_TREE_prob = predict(diabetes_class_tree, x_test, type = 'prob')[,1]
+```
+
+### Bagged Classification Tree
+
+```{r bagged_class}
+
+set.seed(100)
+
+diabetes_class_bagged = train(x = x_train, y = diabetes_train_class,
+                              method = 'treebag',
+                              metric = 'ROC',
+                              preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                              nbagg = 50,
+                              trControl = class_ctrl)
+
+diabetes_class_bagged
+
+diabetes_results$CLASS_Bagged = predict(diabetes_class_bagged, x_test)
+diabetes_results$CLASS_Bagged_prob = predict(diabetes_class_bagged, x_test, type = 'prob')[,1]
+```
+
+### Classification Boosting
+
+```{r boosting_class}
+
+set.seed(100)
+
+gbmGrid_class = expand.grid( interaction.depth = seq( 1, 7, by=2 ),
+                       n.trees = seq( 100, 1000, by=100 ),
+                       shrinkage = c(0.01, 0.1),
+                       n.minobsinnode = 10 )
+
+diabetes_class_boosting = train(x = x_train, y = diabetes_train_class,
+                                method = 'gbm',
+                                metric = 'ROC',
+                                preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                                tuneGrid = gbmGrid_class,
+                                trControl = class_ctrl,
+                                verbose = FALSE)
+
+diabetes_class_boosting
+plot(diabetes_class_boosting, auto.key = list(columns = 4, lines = TRUE))
+
+plot(varImp(diabetes_class_boosting, scale = FALSE))
+
+diabetes_results$CLASS_Boosting = predict(diabetes_class_boosting, x_test)
+diabetes_results$CLASS_Boosting_prob = predict(diabetes_class_boosting, x_test, type = 'prob')[,1]
+```
+
+### Classification Random Forest
+
+```{r class_rf}
+
+set.seed(100)
+
+mtryGrid_class = data.frame(mtry = 1:8)
+
+diabetes_class_rf = train(x = x_train, y = diabetes_train_class,
+                          method = 'rf',
+                          metric = 'ROC',
+                          preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
+                          tuneGrid = mtryGrid_class,
+                          ntree = 200,
+                          importance = TRUE,
+                          trControl = class_ctrl)
+
+diabetes_class_rf
+plot(diabetes_class_rf)
+
+diabetes_results$CLASS_RF = predict(diabetes_class_rf, x_test)
+diabetes_results$CLASS_RF_prob = predict(diabetes_class_rf, x_test, type = 'prob')[,1]
+```
+
+## Model Performance and Comparison
+
+### ROC
+
+```{r ROC}
+
+# ROC for logistic model
+plot(roc(diabetes_results$obs_class, diabetes_results$Log_prob), col=1, lty=1, lwd=2)
+
+# ROC for LDA
+lines(roc(diabetes_results$obs_class, diabetes_results$LDA_prob), col=2, lty=2, lwd=2)
+
+# ROC for PLSDA
+lines(roc(diabetes_results$obs_class, diabetes_results$PLSDA_prob), col=3, lty=3, lwd=2)
+
+# ROC for penalized model
+lines(roc(diabetes_results$obs_class, diabetes_results$GLMNET_prob), col=4, lty=4, lwd=2)
+
+# ROC for NSC
+lines(roc(diabetes_results$obs_class, diabetes_results$NSC_prob), col=5, lty=5, lwd=2)
+
+# ROC for Classification Tree
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_TREE_prob), col=6, lty=6, lwd=2)
+
+# ROC for Bagged Tree
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_Bagged_prob), col=7, lty=7, lwd=2)
+
+# ROC for Boosting
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_Boosting_prob), col=8, lty=8, lwd=2)
+
+# ROC for Random Forest
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_RF_prob), col=9, lty=9, lwd=2)
+
+# ROC for QDA
+lines(roc(diabetes_results$obs_class, diabetes_results$QDA_prob), col=10, lty=10, lwd=2)
+
+# ROC for RDA
+lines(roc(diabetes_results$obs_class, diabetes_results$RDA_prob), col=11, lty=11, lwd=2)
+
+# ROC for MDA
+lines(roc(diabetes_results$obs_class, diabetes_results$MDA_prob), col=12, lty=12, lwd=2)
+
+# ROC for NB
+lines(roc(diabetes_results$obs_class, diabetes_results$NB_prob), col=13, lty=13, lwd=2)
+
+# ROC for KNN
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_KNN_prob), col=14, lty=14, lwd=2)
+
+# ROC for NNET
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_NNET_prob), col=15, lty=15, lwd=2)
+
+# ROC for FDA
+lines(roc(diabetes_results$obs_class, diabetes_results$FDA_prob), col=16, lty=16, lwd=2)
+
+# ROC for SVMr
+lines(roc(diabetes_results$obs_class, diabetes_results$CLASS_SVMr_prob), col=17, lty=17, lwd=2)
+
+legend('bottomright',
+       c('logistic', 'lda', 'plsda',
+         'penalized model', 'nsc', 
+         'tree', 'bagged', 'boosting',
+         'rf', 'qda', 'rda', 'mda', 'nb', 
+         'knn', 'nnet', 'fda', 'svmr'),
+       col=1:17, lty=1:17,lwd=2)
+```
+
+### Model Accuracy
+
+```{r kappa}
+
+log_conf      = confusionMatrix(data = diabetes_results$Log,            reference = diabetes_results$obs_class)
+LDA_conf      = confusionMatrix(data = diabetes_results$LDA,            reference = diabetes_results$obs_class)
+PLSDA_conf    = confusionMatrix(data = diabetes_results$PLSDA,          reference = diabetes_results$obs_class)
+GLMNET_conf   = confusionMatrix(data = diabetes_results$GLMNET,         reference = diabetes_results$obs_class)
+NSC_conf      = confusionMatrix(data = diabetes_results$NSC,            reference = diabetes_results$obs_class)
+tree_conf     = confusionMatrix(data = diabetes_results$CLASS_TREE,     reference = diabetes_results$obs_class)
+bagged_conf   = confusionMatrix(data = diabetes_results$CLASS_Bagged,   reference = diabetes_results$obs_class)
+boosting_conf = confusionMatrix(data = diabetes_results$CLASS_Boosting, reference = diabetes_results$obs_class)
+rf_conf       = confusionMatrix(data = diabetes_results$CLASS_RF,       reference = diabetes_results$obs_class)
+QDA_conf      = confusionMatrix(data = diabetes_results$QDA,            reference = diabetes_results$obs_class)
+RDA_conf      = confusionMatrix(data = diabetes_results$RDA,            reference = diabetes_results$obs_class)
+MDA_conf      = confusionMatrix(data = diabetes_results$MDA,            reference = diabetes_results$obs_class)
+NB_conf       = confusionMatrix(data = diabetes_results$NB,             reference = diabetes_results$obs_class)
+KNN_conf      = confusionMatrix(data = diabetes_results$CLASS_KNN,      reference = diabetes_results$obs_class)
+NNET_conf     = confusionMatrix(data = diabetes_results$CLASS_NNET,     reference = diabetes_results$obs_class)
+FDA_conf      = confusionMatrix(data = diabetes_results$FDA,            reference = diabetes_results$obs_class)
+SVMr_conf     = confusionMatrix(data = diabetes_results$CLASS_SVMr,     reference = diabetes_results$obs_class)
+
+model_perf_class = data.frame(rbind(log       = c(log_conf$overall[1:2],      log_conf$byClass[1:2]),
+                                    LDA       = c(LDA_conf$overall[1:2],      LDA_conf$byClass[1:2]),
+                                    PLSDA     = c(PLSDA_conf$overall[1:2],    PLSDA_conf$byClass[1:2]),
+                                    Penalized = c(GLMNET_conf$overall[1:2],   GLMNET_conf$byClass[1:2]),
+                                    NSC       = c(NSC_conf$overall[1:2],      NSC_conf$byClass[1:2]),
+                                    Tree      = c(tree_conf$overall[1:2],     tree_conf$byClass[1:2]),
+                                    Bagged    = c(bagged_conf$overall[1:2],   bagged_conf$byClass[1:2]),
+                                    Boosting  = c(boosting_conf$overall[1:2], boosting_conf$byClass[1:2]),
+                                    RF        = c(rf_conf$overall[1:2],       rf_conf$byClass[1:2]),
+                                    QDA       = c(QDA_conf$overall[1:2],      QDA_conf$byClass[1:2]),
+                                    RDA       = c(RDA_conf$overall[1:2],      RDA_conf$byClass[1:2]),
+                                    MDA       = c(MDA_conf$overall[1:2],      MDA_conf$byClass[1:2]),
+                                    NB        = c(NB_conf$overall[1:2],       NB_conf$byClass[1:2]),
+                                    KNN       = c(KNN_conf$overall[1:2],      KNN_conf$byClass[1:2]),
+                                    NNET      = c(NNET_conf$overall[1:2],     NNET_conf$byClass[1:2]),
+                                    FDA       = c(FDA_conf$overall[1:2],      FDA_conf$byClass[1:2]),
+                                    SVMr      = c(SVMr_conf$overall[1:2],     SVMr_conf$byClass[1:2])
+                                    ))
+
+model_perf_class[order(model_perf_class$Kappa, decreasing = TRUE),]
+```
 
