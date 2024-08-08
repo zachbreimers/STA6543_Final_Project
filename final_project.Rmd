@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Josh Gardner, Brody Johnson, Zach Reimers (gpq253), Sara Shields-Menard"
+author: "Josh Gardner, Brody Johnson, Zach Reimers, Sara Shields-Menard"
 date: "2024-07-30"
 output: word_document
 ---
