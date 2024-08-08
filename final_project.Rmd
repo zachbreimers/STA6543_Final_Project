@@ -91,7 +91,7 @@ diabetes_lm = train(x = x_train, y = diabetes_train,
                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                     trControl = ctrl)
 
-diabetes_lm
+#diabetes_lm
 summary(diabetes_lm)
 
 diabetes_results = data.frame(obs = diabetes_test,
@@ -100,7 +100,7 @@ diabetes_results = data.frame(obs = diabetes_test,
 
 ### Partial Least Squares
 
-```{r pls}
+```{r pls, include=FALSE}
 
 set.seed(100)
 diabetes_pls = train(x = x_train, y = diabetes_train,
@@ -109,15 +109,18 @@ diabetes_pls = train(x = x_train, y = diabetes_train,
                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                     trControl = ctrl)
 
-diabetes_pls
-plot(diabetes_pls)
-
 diabetes_results$PLS = predict(diabetes_pls, x_test)
+```
+
+```{r pls_output}
+
+#diabetes_pls
+plot(diabetes_pls)
 ```
 
 ### PCR
 
-```{r pcr}
+```{r pcr, include=FALSE}
 
 set.seed(100)
 diabetes_pcr = train(x = x_train, y = diabetes_train,
@@ -126,17 +129,20 @@ diabetes_pcr = train(x = x_train, y = diabetes_train,
                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                     trControl = ctrl)
 
-diabetes_pcr
-plot(diabetes_pcr)
-
 diabetes_results$PCR = predict(diabetes_pcr, x_test)
+```
+
+```{r pcr_output}
+
+#diabetes_pcr
+plot(diabetes_pcr)
 ```
 
 ## Shrinkage-Penalized Models
 
 ### Ridge Regression
 
-```{r ridge}
+```{r ridge, include=FALSE}
 
 set.seed(100)
 
@@ -148,17 +154,20 @@ diabetes_ridge = train(x = x_train, y = diabetes_train,
                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                     trControl = ctrl)
 
-diabetes_ridge
-names(diabetes_ridge)
-summary(diabetes_ridge)
-plot(diabetes_ridge)
-
 diabetes_results$RIDGE = predict(diabetes_ridge, x_test)
+```
+
+```{r ridge_output}
+
+#diabetes_ridge
+#names(diabetes_ridge)
+#summary(diabetes_ridge)
+plot(diabetes_ridge)
 ```
 
 ### ENET
 
-```{r enet}
+```{r enet, include=FALSE}
 
 set.seed(100)
 
@@ -171,19 +180,22 @@ diabetes_enet <- train(x = x_train, y = diabetes_train,
                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                     trControl = ctrl)
 
-diabetes_enet
-names(diabetes_enet)
-summary(diabetes_enet)
-plot(diabetes_enet)
-
 diabetes_results$ENET = predict(diabetes_enet, x_test)
+```
+
+```{r enet_output}
+
+#diabetes_enet
+#names(diabetes_enet)
+#summary(diabetes_enet)
+plot(diabetes_enet)
 ```
 
 ## NonLinear Regression Models
 
 ### Neural Net
 
-```{r nnet}
+```{r nnet, include=FALSE}
 
 set.seed(100)
 
@@ -191,7 +203,7 @@ nnetGrid = expand.grid(decay = c(0, 0.01, 0.1, 1),
                        size = c(1,3,5,7),
                        bag = FALSE)
 
-ptm = proc.time()
+#ptm = proc.time()
 
 diabetes_nnet = train(x = x_train, y = diabetes_train,
                   method = 'avNNet',
@@ -204,17 +216,20 @@ diabetes_nnet = train(x = x_train, y = diabetes_train,
                   maxit = 1000,
                   allowParallel = FALSE)
 
-diabetes_nnet
-plot(diabetes_nnet)
-
-proc.time() - ptm
+#proc.time() - ptm
 
 diabetes_results$NNET = predict(diabetes_nnet, x_test)
 ```
 
+```{r nnet_output}
+
+#diabetes_nnet
+plot(diabetes_nnet)
+```
+
 ### MARS
 
-```{r MARS}
+```{r MARS, include=FALSE}
 
 set.seed(100)
 
@@ -224,18 +239,21 @@ diabetes_mars = train(x = x_train, y = diabetes_train,
                   preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                   trControl = ctrl)
 
-diabetes_mars
+diabetes_results$MARS = predict(diabetes_mars, x_test)
+```
+
+```{r MARS_output}
+
+#diabetes_mars
 plot(diabetes_mars)
 
 MARSimp = varImp(diabetes_mars, scale = FALSE)
 plot(MARSimp)
-
-diabetes_results$MARS = predict(diabetes_mars, x_test)
 ```
 
 ### Radial SVM
 
-```{r SVMr}
+```{r SVMr, include=FALSE}
 
 set.seed(100)
 
@@ -245,15 +263,18 @@ diabetes_svmr = train(x = x_train, y = diabetes_train,
                   preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                   trControl = ctrl)
 
-diabetes_svmr
-plot(diabetes_svmr, scales = list(x = list(log = 2)))
-
 diabetes_results$SVMr = predict(diabetes_svmr, x_test)
+```
+
+```{r SVMr_output}
+
+#diabetes_svmr
+plot(diabetes_svmr, scales = list(x = list(log = 2)))
 ```
 
 ### Poly SVM
 
-```{r SVMp}
+```{r SVMp, include=FALSE}
 
 set.seed(100)
 
@@ -267,17 +288,20 @@ diabetes_svmp = train(x = x_train, y = diabetes_train,
                   preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                   trControl = ctrl)
 
-diabetes_svmp
+diabetes_results$SVMp = predict(diabetes_svmp, x_test)
+```
+
+```{r SVMp_output}
+
+#diabetes_svmp
 plot(diabetes_svmp,
      scales = list(x = list(log = 2),
                    between = list(x = 0.5, y = 1)))
-
-diabetes_results$SVMp = predict(diabetes_svmp, x_test)
 ```
 
 ### KNN
 
-```{r knn}
+```{r knn, include=FALSE}
 
 set.seed(100)
 
@@ -287,17 +311,20 @@ diabetes_knn = train(x = x_train, y = diabetes_train,
                   preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                   trControl = ctrl)
 
-diabetes_knn
-plot(diabetes_knn)
-
 diabetes_results$KNN = predict(diabetes_knn, x_test)
+```
+
+```{r knn_output}
+
+#diabetes_knn
+plot(diabetes_knn)
 ```
 
 ## Regression Trees and Rule-Based Models
 
 ### Basic Regression Tree
 
-```{r tree}
+```{r tree, include=FALSE}
 
 set.seed(100)
 
@@ -307,22 +334,25 @@ diabetes_tree = train(x = x_train, y = diabetes_train,
                   preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                   trControl = ctrl)
 
-diabetes_tree
+diabetes_results$TREE = predict(diabetes_tree, x_test)
+```
+
+```{r tree_output}
+
+#diabetes_tree
 plot(diabetes_tree, scales = list(x = list(log = 10)))
 
 Tree = as.party(diabetes_tree$finalModel)
 plot(Tree)
 
 tree_Imp = varImp(diabetes_tree, scale = FALSE, competes = FALSE)
-tree_Imp
+#tree_Imp
 plot(tree_Imp)
-
-diabetes_results$TREE = predict(diabetes_tree, x_test)
 ```
 
 ### Conditional Inference Tree
 
-```{r ctree}
+```{r ctree,include=FALSE}
 
 set.seed(100)
 
@@ -334,13 +364,16 @@ diabetes_ctree = train(x = x_train, y = diabetes_train,
                    preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                    trControl = ctrl)
 
-diabetes_ctree
+diabetes_results$CTREE = predict(diabetes_ctree, x_test)
+```
+
+```{r ctree_output}
+
+#diabetes_ctree
 
 plot(diabetes_ctree)
 
 plot(diabetes_ctree$finalModel)
-
-diabetes_results$CTREE = predict(diabetes_ctree, x_test)
 ```
 
 ### Bagged Tree
@@ -362,7 +395,7 @@ diabetes_results$Bagged = predict(diabetes_bagged, x_test)
 
 ### Boosting
 
-```{r boosting}
+```{r boosting, include=FALSE}
 
 set.seed(100)
 
@@ -378,15 +411,18 @@ diabetes_boost = train(x = x_train, y = diabetes_train,
                  trControl = ctrl,
                  verbose = FALSE)
 
-diabetes_boost
-plot(diabetes_boost, auto.key = list(columns = 4, lines = TRUE))
-
 diabetes_results$Boosting = predict(diabetes_boost, x_test)
+```
+
+```{r boosting_output}
+
+#diabetes_boost
+plot(diabetes_boost, auto.key = list(columns = 4, lines = TRUE))
 ```
 
 ### Random Forest
 
-```{r random_forest}
+```{r random_forest, include=FALSE}
 
 set.seed(100)
 
@@ -400,18 +436,21 @@ diabetes_rf = train(x = x_train, y = diabetes_train,
                 preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                 trControl = ctrl)
 
-diabetes_rf
+diabetes_results$RF = predict(diabetes_rf, x_test)
+```
+
+```{r random_forest_output}
+
+#diabetes_rf
 plot(diabetes_rf)
 
 rf_Imp = varImp(diabetes_rf, scale = FALSE)
-rf_Imp
-
-diabetes_results$RF = predict(diabetes_rf, x_test)
+plot(rf_Imp)
 ```
 
 ### Random Forest Tuned with OOB Estimates
 
-```{r random_forest_OOB}
+```{r random_forest_OOB, include=FALSE}
 
 set.seed(100)
 
@@ -425,18 +464,21 @@ diabetes_rfOOB = train(x = x_train, y = diabetes_train,
                 preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                 trControl = ctrlOOB)
 
-diabetes_rfOOB
+diabetes_results$RF_OOB = predict(diabetes_rfOOB, x_test)
+```
+
+```{r random_forest_OOB_output}
+
+#diabetes_rfOOB
 plot(diabetes_rfOOB)
 
 rfOOB_Imp = varImp(diabetes_rfOOB, scale = FALSE)
-rfOOB_Imp
-
-diabetes_results$RF_OOB = predict(diabetes_rfOOB, x_test)
+plot(rfOOB_Imp)
 ```
 
 ### Cubist
 
-```{r cubist}
+```{r cubist, include=FALSE}
 
 set.seed(100)
 
@@ -449,14 +491,17 @@ diabetes_cubist = train(x = x_train, y = diabetes_train,
                     preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                     trControl = ctrl)
 
-diabetes_cubist
+diabetes_results$Cubist = predict(diabetes_cubist, x_test)
+```
+
+```{r cubist_output}
+
+#diabetes_cubist
 plot(diabetes_cubist, auto.key = list(columns = 4, lines = TRUE))
 
 cb_Imp = varImp(diabetes_cubist, scale = FALSE)
-cb_Imp
+#cb_Imp
 plot(cb_Imp)
-
-diabetes_results$Cubist = predict(diabetes_cubist, x_test)
 ```
 
 ### Continuous Model Performance Results
@@ -484,7 +529,6 @@ modelPerf = data.frame(rbind(OLS      = postResample(pred = diabetes_results$LM,
 
 modelPerf[order(modelPerf$RMSE),]
 ```
-
 
 ## Classification Response Models
 
@@ -525,10 +569,8 @@ diabetes_logistic = train(x = x_train, y = diabetes_train_class,
 
 diabetes_logistic 
 
-
 diabetes_results$Log = predict(diabetes_logistic, x_test)
 diabetes_results$Log_prob = predict(diabetes_logistic, x_test, type = 'prob')[,1]
-
 ```
 
 ### Linear discriminant analysis
@@ -586,7 +628,7 @@ diabetes_glmnet = train(x_train, y =  diabetes_train_class,
                       preProcess = c('center', 'scale', 'BoxCox', 'spatialSign'),
                       trControl = class_ctrl)
 
-diabetes_glmnet
+#diabetes_glmnet
 plot(diabetes_glmnet)
  
 diabetes_results$GLMNET = predict(diabetes_glmnet, x_test)
@@ -595,7 +637,7 @@ diabetes_results$GLMNET_prob = predict(diabetes_glmnet, x_test, type = 'prob')[,
 
 ### Nearest Shrunken Centroids
 
-```{r NSC}
+```{r NSC, include=FALSE}
 
 set.seed(100)
 
@@ -608,20 +650,24 @@ diabetes_nsc = train(x = x_train, y = diabetes_train_class,
                      metric = "ROC",
                      trControl = class_ctrl)
 
-diabetes_nsc
-plot(diabetes_nsc)
-
-plot(varImp(diabetes_nsc, scale =FALSE))
-
 diabetes_results$NSC = predict(diabetes_nsc, x_test)
 diabetes_results$NSC_prob = predict(diabetes_nsc, x_test, type = 'prob')[,1]
 ```
+
+```{r NSC_output}
+
+#diabetes_nsc
+plot(diabetes_nsc)
+
+plot(varImp(diabetes_nsc, scale =FALSE))
+```
+
 
 ## Non-Linear Classification Models
 
 ### Quadratic discriminant analysis
 
-```{r}
+```{r qda}
 
 set.seed(100)
 
@@ -639,7 +685,7 @@ diabetes_results$QDA_prob = predict(diabetes_qda, x_test, type = 'prob')[,1]
 
 ### Regularized discriminant analysis
 
-```{r}
+```{r rda}
 
 set.seed(100)
 
@@ -655,10 +701,9 @@ diabetes_results$RDA = predict(diabetes_rda, x_test)
 diabetes_results$RDA_prob = predict(diabetes_rda, x_test, type = 'prob')[,1]
 ```
 
-
 ### Mixture discriminant analysis 
 
-```{r}
+```{r mda}
 
 set.seed(100)
 
@@ -677,7 +722,7 @@ diabetes_results$MDA_prob = predict(diabetes_mda, x_test, type = 'prob')[,1]
 
 ### Naïve Bayes
 
-```{r}
+```{r nb}
 
 set.seed(100)
 
@@ -693,10 +738,9 @@ diabetes_results$NB = predict(diabetes_nb, x_test)
 diabetes_results$NB_prob = predict(diabetes_nb, x_test, type = 'prob')[,1]
 ```
 
-
 ### K-nearest neighbors
 
-```{r}
+```{r class_knn}
 
 set.seed(100)
 
@@ -707,17 +751,16 @@ diabetes_class_knn = train(x = x_train, y = diabetes_train_class,
                            tuneGrid = data.frame(.k =  seq(1,400, by=10)),
                            trControl = class_ctrl)
 
-diabetes_class_knn
+#diabetes_class_knn
 plot(diabetes_class_knn)
 
 diabetes_results$CLASS_KNN = predict(diabetes_class_knn, x_test)
 diabetes_results$CLASS_KNN_prob = predict(diabetes_class_knn, x_test, type = 'prob')[,1]
 ```
 
-
 ### Neural networks
 
-```{r}
+```{r class_nnet}
 
 set.seed(100)
 
@@ -736,7 +779,7 @@ diabetes_class_nnet <- train(x = x_train, y = diabetes_train_class,
                              MaxNWts = 200,
                              trControl = class_ctrl)
 
-diabetes_class_nnet
+#diabetes_class_nnet
 plot(diabetes_class_nnet)
 
 diabetes_results$CLASS_NNET = predict(diabetes_class_nnet, x_test)
@@ -745,7 +788,7 @@ diabetes_results$CLASS_NNET_prob = predict(diabetes_class_nnet, x_test, type = '
 
 ### Flexible discriminant analysis
 
-```{r}
+```{r fda}
 
 set.seed(100)
 
@@ -764,7 +807,7 @@ diabetes_results$FDA_prob = predict(diabetes_FDA, x_test, type = 'prob')[,1]
 
 ### Support Vector Machines 
 
-```{r}
+```{r class_svmr}
 
 set.seed(100)
 
@@ -800,7 +843,7 @@ diabetes_class_tree = train(x = x_train, y = diabetes_train_class,
                             tuneLength = 30,
                             trControl = class_ctrl)
 
-diabetes_class_tree
+#diabetes_class_tree
 plot(diabetes_class_tree)
 
 diabetes_results$CLASS_TREE = predict(diabetes_class_tree, x_test)
@@ -845,7 +888,7 @@ diabetes_class_boosting = train(x = x_train, y = diabetes_train_class,
                                 trControl = class_ctrl,
                                 verbose = FALSE)
 
-diabetes_class_boosting
+#diabetes_class_boosting
 plot(diabetes_class_boosting, auto.key = list(columns = 4, lines = TRUE))
 
 plot(varImp(diabetes_class_boosting, scale = FALSE))
@@ -871,7 +914,7 @@ diabetes_class_rf = train(x = x_train, y = diabetes_train_class,
                           importance = TRUE,
                           trControl = class_ctrl)
 
-diabetes_class_rf
+#diabetes_class_rf
 plot(diabetes_class_rf)
 
 diabetes_results$CLASS_RF = predict(diabetes_class_rf, x_test)
